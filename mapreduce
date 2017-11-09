@@ -1,0 +1,3 @@
+## spring boot mapreduce
+https://docs.mongodb.com/manual/reference/command/mapReduce/
+https://github.com/spring-projects/spring-data-mongodb/blob/master/spring-data-mongodb/src/test/java/org/springframework/data/mongodb/core/mapreduce/MapReduceTests.java
