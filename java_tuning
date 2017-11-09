@@ -2,3 +2,10 @@
 http://outofmemory.cn/c/java-outOfMemoryError
 http://wiki.jikexueyuan.com/project/java-vm/storage.html
 http://www.jianshu.com/p/2fdee831ed03
+
+## 分析JAVA应用CPU占用过高的问题
+使用jstack分析java程序cpu占用率过高的问题
+1，使用jps查找出java进程的pid，如3707
+2，使用top -p 14292 -H观察该进程中所有线程的CPU占用。
+3，找出CPU消耗较多的线程id，如15844，将15844转换为16进制0x3de4，注意是小写哦
+4，使用jstack 14292|grep -A 10 0x3de4来查询出具体的线程状态。
