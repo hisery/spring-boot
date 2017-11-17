@@ -1,0 +1,92 @@
+package com.tsharp.testbot.v0.util.tools;
+
+import com.tsharp.testbot.v0.util.config.InitConfig;
+import com.tsharp.testbot.v0.util.config.MilestoneConfig;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.BasicResponseHandler;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.Map;
+
+/**
+ * Created by hisery on 2017/11/16.
+ */
+public class HttpUtil
+{
+    
+    private static final Logger LOGGER = LoggerFactory.getLogger(HttpUtil.class);
+
+    /**
+     * get方法公共类
+     * @param urlString
+     * @return
+     * @throws Exception
+     */
+    public static Map<String, Object> doGet(String urlString)
+        throws Exception
+    {
+        StringBuffer response = new StringBuffer();
+        BufferedReader in = null;
+        
+        URL url = new URL(urlString);
+        HttpURLConnection con = (HttpURLConnection)url.openConnection();
+        //set default method
+        con.setRequestMethod(MilestoneConfig.GET_USER_METHOD);
+        //
+        int responseCode = con.getResponseCode();
+        
+        if (responseCode != InitConfig.SUCCESS_CODE)
+        {
+            LOGGER.info("获取数据失败，状态码是：" + Integer.toString(responseCode));
+            throw new Exception("获取用户数据失败");
+        }
+        else
+        {
+            // Reading response from input Stream
+            in = new BufferedReader(new InputStreamReader(con.getInputStream(), InitConfig.UTF8));
+            String output = "";
+            while ((output = in.readLine()) != null)
+            {
+                response.append(output);
+            }
+            in.close();
+        }
+        
+        return StringToMapUtil.stringToMap(response.toString());
+    }
+
+    /**
+     * post方法公共类
+     * @param urlString
+     * @param jsonString
+     * @return
+     * @throws Exception
+     */
+    public static Map<String, Object> doPost(String urlString, String jsonString) throws Exception{
+        String resultContent = "";
+        CloseableHttpClient httpClient = HttpClientBuilder.create().build();
+        HttpPost postMethod = new HttpPost(urlString);
+        StringEntity entity = new StringEntity(jsonString, ContentType.APPLICATION_JSON);
+        postMethod.setEntity(entity);
+        HttpResponse response = httpClient.execute(postMethod);
+        int stateCode = response.getStatusLine().getStatusCode();
+        if (stateCode != HttpStatus.SC_OK)
+        {
+            throw new Exception("查询数据时报错:" + response.getStatusLine().getReasonPhrase());
+        }
+        resultContent = new BasicResponseHandler().handleResponse(response);
+        resultContent = new String(resultContent.getBytes(InitConfig.UTF8), InitConfig.UTF8);
+        return StringToMapUtil.stringToMap(resultContent.toString());
+    }
+}
