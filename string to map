@@ -1,0 +1,71 @@
+package com.tsharp.testbot.v0.util.tools;
+
+import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONObject;
+
+import java.util.*;
+
+/**
+ * Created by hisery on 2017/11/16.
+ */
+public class StringToMapUtil {
+
+    /**
+     * String ConvertTo Map
+     * @param str
+     * @return
+     * @throws Exception
+     */
+    public static Map<String, Object> stringToMap(String str)
+            throws Exception
+    {
+        JSONObject ob = new JSONObject(str);
+        return toMap(ob);
+    }
+
+    private static Map<String, Object> toMap(JSONObject object)
+            throws Exception
+    {
+        Map<String, Object> map = new HashMap<String, Object>();
+
+        Iterator<String> keysItr = object.keys();
+        while (keysItr.hasNext())
+        {
+            String key = keysItr.next();
+            Object value = object.get(key);
+
+            if (value instanceof JSONArray)
+            {
+                value = toList((JSONArray)value);
+            }
+            else if (value instanceof JSONObject)
+            {
+                value = toMap((JSONObject)value);
+            }
+            map.put(key, value);
+        }
+
+        return map;
+    }
+
+    private static List<Object> toList(JSONArray array)
+            throws Exception
+    {
+        List<Object> list = new ArrayList<Object>();
+
+        for (int i = 0; i < array.length(); i++)
+        {
+            Object value = array.get(i);
+            if (value instanceof JSONArray)
+            {
+                value = toList((JSONArray)value);
+            }
+            else if (value instanceof JSONObject)
+            {
+                value = toMap((JSONObject)value);
+            }
+            list.add(value);
+        }
+        return list;
+    }
+}
