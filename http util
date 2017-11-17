@@ -1,7 +1,7 @@
-package com.tsharp.testbot.v0.util.tools;
+package com.hisery;
 
-import com.tsharp.testbot.v0.util.config.InitConfig;
-import com.tsharp.testbot.v0.util.config.MilestoneConfig;
+import com.hisery.InitConfig;
+import com.hisery.MilestoneConfig;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.HttpPost;
