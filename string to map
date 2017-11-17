@@ -1,4 +1,4 @@
-package com.tsharp.testbot.v0.util.tools;
+package com.hisery;
 
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
