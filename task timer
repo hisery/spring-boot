@@ -1,0 +1,23 @@
+package com.hisery;
+
+import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
+
+/**
+ * Created by hisery on 2017/8/4.
+ */
+@Configuration
+@EnableScheduling
+public class TestTimer
+{
+
+    /**
+     *   Get PPM Tree
+     */
+    @Scheduled(cron = "0 0 */12 * * *")
+    public void test()
+    {
+        //TODO do your service
+    }
+}
