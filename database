@@ -1,0 +1,55 @@
+##配置数据库
+spring.data.mongodb.first.uri=mongodb://first:first@127.0.0.1:27018/first
+
+spring.data.mongodb.second.uri=mongodb://second:second@127.0.0.1:27018/second
+
+##连接数据库虚类
+public abstract class AbstractMongoConfigure {
+    private String uri;
+    /*
+       * Method that creates MongoDbFactory
+       * Common to both of the MongoDb connections
+       */
+    public MongoDbFactory mongoDbFactory() throws Exception {
+
+        return new SimpleMongoDbFactory(new MongoClientURI(uri));
+    }
+    /*
+     * Factory method to create the MongoTemplate
+     */
+    abstract public MongoTemplate getMongoTemplate() throws Exception;
+
+    public String getUri() {
+        return uri;
+    }
+
+    public void setUri(String uri) {
+        this.uri = uri;
+    }
+
+}
+
+##数据库1实体类
+@Configuration
+@EnableMongoRepositories(basePackages = {"com.hs.repository.first"}, mongoTemplateRef = "firstMongoTemplate")
+@ConfigurationProperties(prefix = "spring.data.mongodb.first")
+public class StatisticsMongoConfigure extends AbstractMongoConfigure {
+    @Primary
+    @Override
+    @Bean(name = "firstMongoTemplate")
+    public MongoTemplate getMongoTemplate() throws Exception {
+        return new MongoTemplate(mongoDbFactory());
+    }
+}
+
+##数据库2实体类
+@Configuration
+@EnableMongoRepositories(basePackages = {"com.hs.repository.second"}, mongoTemplateRef = "secondMongoTemplate")
+@ConfigurationProperties(prefix = "spring.data.mongodb.second")
+public class StatisticsMongoConfigure extends AbstractMongoConfigure {
+    @Override
+    @Bean(name = "secondMongoTemplate")
+    public MongoTemplate getMongoTemplate() throws Exception {
+        return new MongoTemplate(mongoDbFactory());
+    }
+}
