@@ -1,0 +1,24 @@
+springboot schedule 解决定时任务不执行的问题
+
+@Configuration
+public class ScheduleConfig implements SchedulingConfigurer {
+    
+    @Override
+    public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
+        Method[] methods = BatchProperties.Job.class.getMethods();
+        int defaultPoolSize = 3;
+        int corePoolSize = 0;
+        if (methods != null && methods.length > 0) {
+            for (Method method : methods) {
+                Scheduled annotation = method.getAnnotation(Scheduled.class);
+                if (annotation != null) {
+                    corePoolSize++;
+                }
+            }
+            if (defaultPoolSize > corePoolSize) {
+                corePoolSize = defaultPoolSize;
+            }
+        }
+        taskRegistrar.setScheduler(Executors.newScheduledThreadPool(corePoolSize));
+    }
+}
