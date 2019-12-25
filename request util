@@ -1,0 +1,175 @@
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.servlet.http.HttpServletRequest;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.util.*;
+
+public class RequestUtil {
+    public static final String REQUEST_ID_KEY = "requestId";
+    public static final String REQUEST_LANGUAGE_KEY = "language";
+    public static final String REQUEST_USER_KEY = "username";
+    public static ThreadLocal<Map<String, Object>> requestIdThreadLocal = new ThreadLocal<>();
+
+
+    private static final Logger logger = LoggerFactory.getLogger(RequestUtil.class);
+
+    public static String getRequestId(HttpServletRequest request) {
+        if (requestIdThreadLocal.get() == null) {
+            requestIdThreadLocal.set(new HashMap<>());
+        }
+
+        String requestId = getKeyFromRequest(request, REQUEST_ID_KEY);
+        if (requestId == null) {
+            logger.debug("request parameter 和header 都没有requestId入参");
+            requestId = UUID.randomUUID().toString();
+        }
+        requestIdThreadLocal.get().put(REQUEST_ID_KEY, requestId);
+
+        String lang = getKeyFromRequest(request, REQUEST_LANGUAGE_KEY);
+        if (lang != null && Locale.forLanguageTag(lang) != null) {
+            requestIdThreadLocal.get().put(REQUEST_LANGUAGE_KEY, lang);
+        }
+
+        String username = getKeyFromRequest(request, REQUEST_USER_KEY);
+        if (username != null) {
+            try {
+                requestIdThreadLocal.get().put(REQUEST_USER_KEY, URLDecoder.decode(username, "UTF-8"));
+            } catch (UnsupportedEncodingException e) {
+                logger.error("Decode {} to UTF-8 error", username, e);
+            }
+        }
+        return requestId;
+    }
+
+    public static Locale getThreadLocale() {
+        Map<String, Object> localMap = requestIdThreadLocal.get();
+        String lang = (String) localMap.get(RequestUtil.REQUEST_LANGUAGE_KEY);
+        return lang == null ? Locale.getDefault() : Locale.forLanguageTag(lang);
+    }
+
+    public static boolean isEnglishEnv() {
+        Map<String, Object> localMap = requestIdThreadLocal.get();
+        String lang = (String) localMap.get(RequestUtil.REQUEST_LANGUAGE_KEY);
+        return lang != null && Locale.forLanguageTag(lang) == Locale.US;
+    }
+
+    public static String getKeyFromRequest(HttpServletRequest request, String key) {
+
+        String parameterRequestId = request.getParameter(key);
+        String headerRequestId = request.getHeader(key);
+
+        return headerRequestId != null ? headerRequestId : parameterRequestId;
+    }
+
+    public static String getRequestInfo(HttpServletRequest request) {
+//        request.getLocalAddr();//获取本地IP，即服务器IP
+//        request.getLocalName();//获取本地名称，即服务器名称
+//        request.getLocalPort();//获取本地端口号，即Tomcat端口号
+//        request.getLocale();//用户的语言环境
+//        request.getContextPath();//context路径
+//        request.getMethod();//GET还是POST
+//        request.getProtocol();//协议，http协议
+//        request.getQueryString();//查询字符串
+//        request.getRemoteAddr();//远程IP，即客户端IP
+//        request.getRemotePort();//远程端口，即客户端端口
+//        request.getRemoteUser();//远程用户
+//        request.getRequestedSessionId();//客户端的Session的ID
+//        request.getRequestURI();//用户请求的URL
+//        request.getScheme();//协议头，例如http
+//        request.getServerName();//服务器名称
+//        request.getServerPort();//服务器端口
+//        request.getServletPath();//Servlet路径
+
+        return String.format("Server[IP:%s, Name: %s, Port: %s, Locale: %s], Client[Address:%s,Port:%s,User:%s,SessionId:%s,URI:%s]",
+                request.getLocalAddr(), request.getLocalName(), request.getLocalPort(), request.getLocale(),
+                request.getRemoteAddr(), request.getRemotePort(), request.getRemoteUser(), request.getRequestedSessionId(), request.getRequestURI());
+    }
+
+
+    public static LinkedHashMap<String, Object> getFeignRequestInfoMap(feign.Request request) {
+
+        LinkedHashMap<String, Object> objectMap = new LinkedHashMap<>();
+        objectMap.put("method", request.method());
+        try {
+            objectMap.put("url", URLDecoder.decode(request.url(), "utf8"));
+        } catch (UnsupportedEncodingException e) {
+            objectMap.put("url", request.url());
+        }
+        return objectMap;
+    }
+
+    public static LinkedHashMap<String, Object> getRequestInfoMap(HttpServletRequest request, Map<String, Object> requestBodyMap) {
+        LinkedHashMap<String, Object> objectMap = new LinkedHashMap<>();
+        objectMap.put("address", request.getRemoteAddr());
+        objectMap.put("sessionId", request.getRequestedSessionId());
+        objectMap.put("remoteUser", request.getRemoteUser());
+//        if (request.getSession() != null && request.getSession().getAttribute("loginUser") != null) {
+//            UserInfoVO loginUser = (UserInfoVO) request.getSession().getAttribute("loginUser");
+//            objectMap.put("userName", loginUser.getUserFullName());
+////            objectMap.put("userDept", loginUser.getUserDeptPath());
+//            objectMap.put("userLoginLocation", loginUser.getUserInfo().getLocationCode());
+//        }
+        objectMap.put(RequestUtil.REQUEST_LANGUAGE_KEY, RequestUtil.getKeyFromRequest(request, REQUEST_LANGUAGE_KEY));
+        try {
+            objectMap.put("URI", URLDecoder.decode(request.getRequestURI(), "utf8"));
+        } catch (UnsupportedEncodingException e) {
+            objectMap.put("URI", request.getRequestURI());
+        }
+        Map rpMap = new HashMap();
+        Map pMap = request.getParameterMap();
+        if (pMap.size() > 0) {
+            //通过循环遍历的方式获得key和value并set到jsonobject中
+            Iterator it = pMap.keySet().iterator();
+            while (it.hasNext()) {
+                String key = it.next().toString();
+                String[] values = (String[]) pMap.get(key);
+                rpMap.put(key, StringUtils.join(values, ","));
+            }
+            objectMap.put("requestParams", rpMap);
+        }
+
+        if (requestBodyMap != null && requestBodyMap.size() > 0) {
+            rpMap = new HashMap();
+            rpMap.putAll(requestBodyMap);
+            objectMap.put("requestBody", rpMap);
+        }
+        return objectMap;
+    }
+
+    public static LinkedHashMap<String, Object> getRequestInfoMap(HttpServletRequest request, String requestBodyMap) {
+        LinkedHashMap<String, Object> objectMap = new LinkedHashMap<>();
+        objectMap.put("address", request.getRemoteAddr());
+        objectMap.put("sessionId", request.getRequestedSessionId());
+        objectMap.put("remoteUser", request.getRemoteUser());
+//        if (request.getSession() != null && request.getSession().getAttribute("loginUser") != null) {
+//            UserInfoVO loginUser = (UserInfoVO) request.getSession().getAttribute("loginUser");
+//            objectMap.put("userName", loginUser.getUserFullName());
+////            objectMap.put("userDept", loginUser.getUserDeptPath());
+//            objectMap.put("userLoginLocation", loginUser.getUserInfo().getLocationCode());
+//        }
+        objectMap.put(RequestUtil.REQUEST_LANGUAGE_KEY, RequestUtil.getKeyFromRequest(request, REQUEST_LANGUAGE_KEY));
+        try {
+            objectMap.put("URI", URLDecoder.decode(request.getRequestURI(), "utf8"));
+        } catch (UnsupportedEncodingException e) {
+            objectMap.put("URI", request.getRequestURI());
+        }
+        Map rpMap = new HashMap();
+        Map pMap = request.getParameterMap();
+        if (pMap.size() > 0) {
+            //通过循环遍历的方式获得key和value并set到jsonobject中
+            Iterator it = pMap.keySet().iterator();
+            while (it.hasNext()) {
+                String key = it.next().toString();
+                String[] values = (String[]) pMap.get(key);
+                rpMap.put(key, StringUtils.join(values, ","));
+            }
+            objectMap.put("requestParams", rpMap);
+        }
+        objectMap.put("requestBody", requestBodyMap);
+        return objectMap;
+    }
+
+}
