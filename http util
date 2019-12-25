@@ -89,4 +89,78 @@ public class HttpUtil
         resultContent = new String(resultContent.getBytes(InitConfig.UTF8), InitConfig.UTF8);
         return StringToMapUtil.stringToMap(resultContent.toString());
     }
+    
+    /**
+     * post方法公共类
+     * @param urlString
+     * @param jsonString
+     * @return
+     * @throws Exception
+     */
+    public static String doPostHeader(String urlString, String jsonString, Map<String, String> headers, ContentType contentType) {
+        String resultContent = "";
+        CloseableHttpClient httpClient = null;
+        try {
+            httpClient = HttpClientBuilder.create().build();
+            HttpPost postMethod = new HttpPost(urlString);
+            StringEntity entity = new StringEntity(jsonString, contentType);
+            postMethod.setEntity(entity);
+            if(null != headers) {
+                for (String name : headers.keySet()) {
+                    postMethod.setHeader(name, headers.get(name));
+                }
+            }
+            HttpResponse response = httpClient.execute(postMethod);
+            int stateCode = response.getStatusLine().getStatusCode();
+            if (stateCode != HttpStatus.SC_OK) {
+                LOGGER.info("查询数据报错:{}", response.getStatusLine().getReasonPhrase());
+            }
+            resultContent = new BasicResponseHandler().handleResponse(response);
+            resultContent = new String(resultContent.getBytes(InitConfig.UTF8), InitConfig.UTF8);
+        } catch (Exception e) {
+            LOGGER.error("查询数据异常:{}, body:{}", urlString, jsonString, e);
+        } finally {
+            if (httpClient != null) {
+                try {
+                    httpClient.close();
+                } catch (Exception e) {
+                    LOGGER.error("关闭http请求异常", e);
+                }
+            }
+        }
+        return resultContent.toString();
+    }
+
+    public static String doPostHeaderEntity(String urlString, HttpEntity httpEntity, Map<String, String> headers, ContentType contentType) {
+        String resultContent = "";
+        CloseableHttpClient httpClient = null;
+        try {
+            httpClient = HttpClientBuilder.create().build();
+            HttpPost postMethod = new HttpPost(urlString);
+            postMethod.setEntity(httpEntity);
+            if(null != headers) {
+                for (String name : headers.keySet()) {
+                    postMethod.setHeader(name, headers.get(name));
+                }
+            }
+            HttpResponse response = httpClient.execute(postMethod);
+            int stateCode = response.getStatusLine().getStatusCode();
+            if (stateCode != HttpStatus.SC_OK) {
+                LOGGER.info("查询数据报错:{}", response.getStatusLine().getReasonPhrase());
+            }
+            resultContent = new BasicResponseHandler().handleResponse(response);
+            resultContent = new String(resultContent.getBytes(InitConfig.UTF8), InitConfig.UTF8);
+        } catch (Exception e) {
+            LOGGER.error("查询数据异常:{}", urlString, e);
+        } finally {
+            if (httpClient != null) {
+                try {
+                    httpClient.close();
+                } catch (Exception e) {
+                    LOGGER.error("关闭http请求异常", e);
+                }
+            }
+        }
+        return resultContent.toString();
+    }
 }
